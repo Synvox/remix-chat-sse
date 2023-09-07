@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    --color-primary: 2 104 255;
+    --color-primary-alt: 46 183 132;
+    font-size: 15px;
+    background-color: rgb(var(--color-background));
+  }
+  .theme-light {
+    --color-body: 68 68 68;
+    --color-light: 80 80 80;
+    --color-foreground: 249 250 251;
+    --color-foregroundLighter: 255 255 255;
+    --color-background: 242 244 246;
+    --color-border: 222 222 222;
+  }
+  .theme-dark {
+    --color-primary: 83 140 225;
+    --color-body: 255 255 255;
+    --color-light: 204 204 204;
+    --color-foregroundLighter: 30 35 41;
+    --color-foreground: 22 27 34;
+    --color-background: 13 17 22;
+    --color-border: 39 44 50;
+  }
+  .theme-primary {
+    --color-primary: 255 255 255;
+    --color-primary-alt: 255 255 255;
+    --color-foregroundLighter: 25 124 255;
+    --color-foreground: 2 104 255;
+    --color-background: 2 104 255;
+    --color-body: 255 255 255;
+    --color-light: 255 255 255;
+    --color-border: 5 90 228;
+  }
+  .theme-dark .theme-primary {
+    --color-foreground: 83 140 225;
+    --color-background: 83 140 225;
+  }
+  .theme-primary-alt {
+    --color-primary: 255 255 255;
+    --color-primary-alt: 255 255 255;
+    --color-foregroundLighter: 46 183 132;
+    --color-foreground: 46 183 132;
+    --color-background: 46 183 132;
+    --color-body: 255 255 255;
+    --color-light: 255 255 255;
+    --color-border: 46 183 132;
+  }
+}
