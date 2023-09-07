@@ -1,10 +1,15 @@
-import { useLoaderData, useLocation, useRevalidator } from "@remix-run/react";
+import {
+  useLoaderData,
+  useLocation,
+  useResolvedPath,
+  useRevalidator,
+} from "@remix-run/react";
 import { useEffect } from "react";
 import { useEventSource } from "remix-utils";
 
 export function useLiveLoader<T>() {
-  const eventName = useLocation().pathname;
-  const data = useEventSource(`/events${eventName}`);
+  const { pathname } = useResolvedPath(".");
+  const data = useEventSource(`/events${pathname}`);
 
   const { revalidate } = useRevalidator();
 

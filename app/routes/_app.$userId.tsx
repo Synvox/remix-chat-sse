@@ -147,7 +147,7 @@ export default function () {
             return (
               <div key={message.id}>
                 {separateTime && (
-                  <div className="text-center text-xs text-light opacity-25">
+                  <div className="mb-5 text-center text-xs text-light opacity-50">
                     {dayjs(message.createdAt).format("LLL")}
                   </div>
                 )}
