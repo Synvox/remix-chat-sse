@@ -1,8 +1,6 @@
 import { mdiArrowLeft } from "@mdi/js";
 import { DataFunctionArgs, json } from "@remix-run/node";
 import { useFetcher, useLoaderData } from "@remix-run/react";
-import { Fragment } from "react";
-import reactStringReplace from "react-string-replace";
 import { object, string } from "zod";
 import { ButtonLink } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
@@ -17,42 +15,9 @@ import { Nav } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
 import { UserSchema, getUser } from "~/models/user";
 import { sql } from "~/sql.server";
+import { makeBold } from "~/util/makeBold";
 
 const ArrowLeft = iconOf(mdiArrowLeft);
-
-type Change = {
-  regex: RegExp;
-  fn: (match: string, index: number, offset: number) => React.ReactNode;
-};
-
-function makeProcessor(...changes: Change[]) {
-  return function process(
-    input: string | ReturnType<typeof reactStringReplace>,
-  ) {
-    for (let change of changes) change.regex.lastIndex = 0;
-
-    return Array.from(
-      changes.reduce(
-        (input, change) => reactStringReplace(input, change.regex, change.fn),
-        input,
-      ),
-    ).map((match, i) => <Fragment key={i}>{match}</Fragment>);
-  };
-}
-
-const makeBold = makeProcessor({
-  regex: /\*(.*?)\*/g,
-  fn(match, i) {
-    return (
-      <span
-        key={match + i}
-        className="rounded bg-yellow-500 bg-opacity-20 px-0.5 text-yellow-500"
-      >
-        {match.replace(/\*(.*?)\*/g, "$1")}
-      </span>
-    );
-  },
-});
 
 export async function loader(ctx: DataFunctionArgs) {
   const user = await getUser(ctx);
