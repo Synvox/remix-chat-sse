@@ -10,9 +10,14 @@ import {
   type DataFunctionArgs,
   type V2_MetaFunction,
 } from "@remix-run/node";
-import { Form, Outlet, ShouldRevalidateFunction } from "@remix-run/react";
+import {
+  Form,
+  Outlet,
+  ShouldRevalidateFunction,
+  useFetcher,
+} from "@remix-run/react";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { date, object, string } from "zod";
 import { Button } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
@@ -31,6 +36,7 @@ import { useLiveLoader } from "~/hooks/useLiveLoader";
 import { ThreadSchema } from "~/models/threads";
 import { getUser } from "~/models/user";
 import { sql } from "~/sql.server";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 export const meta: V2_MetaFunction = () => {
   return [
@@ -41,30 +47,37 @@ export const meta: V2_MetaFunction = () => {
 
 export async function loader(ctx: DataFunctionArgs) {
   const user = await getUser(ctx);
+  const queryParams = new URL(ctx.request.url).searchParams;
+  const per = Math.min(10000, Number(queryParams.get("per")) || 32);
+
+  const threads = await sql`
+    select
+      threads.*,
+      date_trunc('day', messages.created_at) as last_message_day,
+      messages.body as last_message_body,
+      to_user.name as to_user_name
+    from threads
+    join messages on messages.id = threads.last_message_id
+    join users to_user on to_user.id = threads.to_user_id
+    where threads.from_user_id = ${user.id}
+    order by messages.created_at desc
+  `.paginate({
+    page: 0,
+    per,
+    schema: ThreadSchema.merge(
+      object({
+        lastMessageDay: date(),
+        lastMessageBody: string(),
+        toUserName: string(),
+      }),
+    ),
+  });
+
   return json({
+    per,
     user,
-    threads: await sql`
-      select
-        threads.*,
-        date_trunc('day', messages.created_at) as last_message_day,
-        messages.body as last_message_body,
-        to_user.name as to_user_name
-      from threads
-      join messages on messages.id = threads.last_message_id
-      join users to_user on to_user.id = threads.to_user_id
-      where threads.from_user_id = ${user.id}
-      order by messages.created_at desc
-    `.paginate({
-      page: 0,
-      per: 200,
-      schema: ThreadSchema.merge(
-        object({
-          lastMessageDay: date(),
-          lastMessageBody: string(),
-          toUserName: string(),
-        }),
-      ),
-    }),
+    threads,
+    hasMore: threads.length === per,
   });
 }
 
@@ -85,7 +98,7 @@ const SearchIcon = iconOf(mdiMagnify);
 const Circle = iconOf(mdiCircle);
 
 export default function Index() {
-  const { threads, user } = useLiveLoader<typeof loader>();
+  const { threads: threadsFromLoader, user } = useLiveLoader<typeof loader>();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
 
   useEffect(() => {
@@ -93,10 +106,9 @@ export default function Index() {
     document.body.classList.add(`theme-${theme}`);
   }, [theme]);
 
-  // In the future it'd be nice to have infinite scroll here.
-  // This could run in SQL or on the server but it'll have to be
-  // client side when infinite scroll is implemented so we'll
-  // leave it here for now.
+  const fetcher = useFetcher<typeof loader>();
+  const threads = fetcher.data?.threads || threadsFromLoader;
+
   const threadsGroupedByDay = threads.reduce(
     (acc, thread) => {
       const day = new Date(thread.lastMessageDay!).toISOString() || "";
@@ -123,6 +135,35 @@ export default function Index() {
     [] as { day: string; threads: typeof threads }[],
   );
 
+  const parentRef = useRef(null);
+  const rowVirtualizer = useVirtualizer({
+    count: threadsGroupedByDay.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => {
+      const { threads } = threadsGroupedByDay[index];
+      return 48 + threads.length * 54.5 + 16;
+    },
+    initialRect: {
+      height: 1440,
+      width: 320,
+    },
+  });
+
+  useEffect(() => {
+    const per = Number(fetcher.data?.per || 0);
+
+    const [lastItem] = [...rowVirtualizer.getVirtualItems()].reverse();
+
+    if (
+      lastItem &&
+      lastItem.index === threadsGroupedByDay.length - 1 &&
+      fetcher.state === "idle" &&
+      fetcher?.data?.hasMore !== false
+    ) {
+      fetcher.load(`/resources/threads?per=${per * 2}`);
+    }
+  }, [fetcher.state === "idle", rowVirtualizer.getVirtualItems()]);
+
   return (
     <Panels>
       <Panel size="small" bg="background" id="panel-nav">
@@ -145,32 +186,54 @@ export default function Index() {
             <Input placeholder="Search" />
           </InputWrap>
         </Nav>
-        <PanelContent padding="none" scroll="vertical">
-          <List dividers="none">
-            {threadsGroupedByDay.map(({ day, threads }) => (
-              <ListGroup>
-                <ListDivider position="sticky" bg="background" border="bottom">
-                  {dayjs(day).format("dddd, MMMM D")}
-                </ListDivider>
-                {threads.map((thread) => (
-                  <ListLink
-                    key={thread.toUserId}
-                    to={`${thread.toUserId}#panel-user-${thread.toUserId}`}
-                    activeTheme="primary"
-                    shape="rounded"
-                    className="pr-8"
+        <PanelContent padding="none" scroll="vertical" ref={parentRef}>
+          <List
+            dividers="none"
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+            }}
+          >
+            {threads.length > 0 && (
+              <div
+                style={{
+                  height: rowVirtualizer.getVirtualItems()[0].start + "px",
+                }}
+              />
+            )}
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const { day, threads } = threadsGroupedByDay[virtualItem.index];
+
+              return (
+                <ListGroup key={day}>
+                  <ListDivider
+                    position="sticky"
+                    bg="background"
+                    border="bottom"
                   >
-                    <ListItemTitle>{thread.toUserName}</ListItemTitle>
-                    <ListItemDetails>{thread.lastMessageBody}</ListItemDetails>
-                    {thread.isUnread && (
-                      <div className="absolute bottom-0 right-6 top-0 flex h-full items-center [.active>&]:hidden">
-                        <Circle className="absolute top-1/2 h-3 w-3 -translate-y-1/2 fill-primary" />
-                      </div>
-                    )}
-                  </ListLink>
-                ))}
-              </ListGroup>
-            ))}
+                    {dayjs(day).format("dddd, MMMM D")}
+                  </ListDivider>
+                  {threads.map((thread) => (
+                    <ListLink
+                      key={thread.toUserId}
+                      to={`${thread.toUserId}#panel-user-${thread.toUserId}`}
+                      activeTheme="primary"
+                      shape="rounded"
+                      className="pr-8"
+                    >
+                      <ListItemTitle>{thread.toUserName}</ListItemTitle>
+                      <ListItemDetails>
+                        {thread.lastMessageBody}
+                      </ListItemDetails>
+                      {thread.isUnread && (
+                        <div className="absolute bottom-0 right-6 top-0 flex h-full items-center [.active>&]:hidden">
+                          <Circle className="absolute top-1/2 h-3 w-3 -translate-y-1/2 fill-primary" />
+                        </div>
+                      )}
+                    </ListLink>
+                  ))}
+                </ListGroup>
+              );
+            })}
           </List>
         </PanelContent>
         <Nav partialBorder="top" justify="between">

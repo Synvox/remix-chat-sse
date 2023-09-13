@@ -1,14 +1,16 @@
-import type { LoaderArgs } from "@remix-run/node";
+import type { DataFunctionArgs } from "@remix-run/node";
 import { eventStream } from "remix-utils";
+import { getUser } from "~/models/user";
 
 import { emitter } from "~/realtimeActions";
 
-export const loader = ({ request, params }: LoaderArgs) => {
-  const path = `/${params["*"]}`;
+export async function loader(ctx: DataFunctionArgs) {
+  const user = await getUser(ctx);
+  const path = `/${ctx.params["*"]}`;
 
-  return eventStream(request.signal, (send) => {
-    const handler = (message: string) => {
-      send({ data: Date.now().toString() });
+  return eventStream(ctx.request.signal, (send) => {
+    const handler = ({ userId }: { userId: number }) => {
+      if (userId === user.id) send({ data: Date.now().toString() });
     };
 
     emitter.addListener(path, handler);
@@ -16,4 +18,4 @@ export const loader = ({ request, params }: LoaderArgs) => {
       emitter.removeListener(path, handler);
     };
   });
-};
+}

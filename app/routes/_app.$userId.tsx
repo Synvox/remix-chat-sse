@@ -107,7 +107,7 @@ export async function action(ctx: DataFunctionArgs) {
       last_message_id = excluded.last_message_id
   `.exec();
 
-  realtimeActions.newMessage(user.id);
+  realtimeActions.newMessage(user.id, userId);
 
   return json({});
 }
@@ -180,7 +180,15 @@ export default function () {
               className="flex-1"
               shape="circle"
             >
-              <Input placeholder="Message" name="body" />
+              <label htmlFor="composer" className="sr-only">
+                Write your message
+              </label>
+              <Input
+                placeholder="Message"
+                name="body"
+                autoFocus
+                id="composer"
+              />
               <Button
                 elevation="small"
                 variant="secondary"

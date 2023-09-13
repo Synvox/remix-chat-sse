@@ -37,10 +37,11 @@ export const ListItemDetails = twComponent(
 );
 export const List = twComponent(
   "div",
-  tw`flex flex-col`,
+  tw`relative flex flex-col`,
   {
     dividers: {
       line: tw`divide-y divide-border`,
+      partial: tw`[&>*:not(:last-child)]:before:absolute [&>*:not(:last-child)]:before:bottom-0 [&>*:not(:last-child)]:before:left-4 [&>*:not(:last-child)]:before:right-4 [&>*:not(:last-child)]:before:border-t [&>*:not(:last-child)]:before:border-border`,
       none: tw``,
     },
   },
@@ -50,7 +51,7 @@ export const List = twComponent(
 );
 export const ListDivider = twComponent(
   "h3",
-  tw`relative mt-4 flex min-h-[32px] items-center px-4 pb-1 text-sm font-semibold text-body text-opacity-80 first:mt-0`,
+  tw`relative mt-4 flex min-h-[32px] items-center px-4 pb-1 text-sm font-semibold text-body text-opacity-60 first:mt-0`,
   {
     border: {
       top: tw`border-t border-border`,
@@ -69,7 +70,7 @@ export const ListDivider = twComponent(
     },
     position: {
       static: tw``,
-      sticky: tw`[.bg-foreground]:from-foreground [.bg-foreground]:to-foreground/90 [.bg-background]:from-background [.bg-background]:to-background/90 sticky top-[-1px] z-10 bg-gradient-to-b backdrop-blur-md`,
+      sticky: tw`[.bg-foreground]:from-foreground [.bg-foreground]:to-foreground/90 [.bg-background]:from-background [.bg-background]:to-background/90 sticky top-0 z-10 bg-gradient-to-b backdrop-blur-md`,
     },
   },
   {

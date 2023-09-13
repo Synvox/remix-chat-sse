@@ -1,7 +1,7 @@
 import { mdiArrowLeft } from "@mdi/js";
 import { DataFunctionArgs, json } from "@remix-run/node";
-import { useFetcher, useLoaderData } from "@remix-run/react";
-import { object, string } from "zod";
+import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
+import { useId, useState } from "react";
 import { ButtonLink } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
 import { Input, InputWrap } from "~/components/Input";
@@ -15,7 +15,7 @@ import { Nav } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
 import { UserSchema, getUser } from "~/models/user";
 import { sql } from "~/sql.server";
-import { makeBold } from "~/util/makeBold";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const ArrowLeft = iconOf(mdiArrowLeft);
 
@@ -32,25 +32,25 @@ export async function loader(ctx: DataFunctionArgs) {
 
   const users = await sql`
     select
-      users.*,
-      ts_headline('english', users.name, websearch_to_tsquery(${query}), 'StartSel=* StopSel=*') as name_highlighted
+      users.*
     from users
-    where (
-      to_tsvector(users.name) @@ websearch_to_tsquery(${query})
-      or users.name ilike ${query} || '%'
-    )
+    where similarity(users.name || ' ' || users.email, ${query}) > 0.001
     and users.id <> ${user.id}
-    limit 20
-  `.all(UserSchema.merge(object({ nameHighlighted: string() })));
+    order by users.name || ' ' || users.email <-> ${query} asc
+    limit 10
+  `.all(UserSchema);
 
   return json({ users });
 }
 
 export default function () {
+  const listId = useId();
   let { users } = useLoaderData<typeof loader>();
+  const [focusedUserIndex, setFocusedUserIndex] = useState(0);
 
   let fetcher = useFetcher();
   if (fetcher.data?.users) users = fetcher.data.users;
+  const navigate = useNavigate();
 
   return (
     <Panel bg="foreground" id="panel-new">
@@ -68,21 +68,52 @@ export default function () {
         <fetcher.Form className="flex flex-1" method="GET" action=".">
           <InputWrap elevation="small" bg="foregroundLighter">
             To:
-            <Input placeholder="Search" autoFocus name="q" />
+            <Input
+              placeholder="Search"
+              autoFocus
+              name="q"
+              onChange={(e) => {
+                fetcher.submit(e.target.form);
+                setFocusedUserIndex(0);
+              }}
+              role="combobox"
+              aria-controls={listId}
+              aria-autocomplete="list"
+              aria-expanded={users.length > 0}
+              data-active-option={`${listId}-item${focusedUserIndex + 1}`}
+              aria-activedescendant=""
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setFocusedUserIndex((i) => Math.max(0, i - 1));
+                } else if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setFocusedUserIndex((i) => Math.min(users.length - 1, i + 1));
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  navigate(
+                    `../${users[focusedUserIndex].id}#panel-user-${users[focusedUserIndex].id}`,
+                  );
+                }
+              }}
+            />
             <button hidden />
           </InputWrap>
         </fetcher.Form>
       </Nav>
       <PanelContent padding="none" scroll="vertical">
         <List dividers="none">
-          {users.map((user) => (
+          {users.map((user, index) => (
             <ListLink
+              id={`${listId}-item${index + 1}`}
+              shape="rounded"
               key={user.id}
               to={`../${user.id}#panel-user-${user.id}`}
               activeTheme="primary"
-              shape="rounded"
+              className={focusedUserIndex === index ? "active" : undefined}
+              role="option"
             >
-              <ListItemTitle>{makeBold(user.nameHighlighted)}</ListItemTitle>
+              <ListItemTitle>{user.name}</ListItemTitle>
               <ListItemDetails>{user.email}</ListItemDetails>
             </ListLink>
           ))}

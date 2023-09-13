@@ -1,6 +1,5 @@
 import {
   useLoaderData,
-  useLocation,
   useResolvedPath,
   useRevalidator,
 } from "@remix-run/react";
