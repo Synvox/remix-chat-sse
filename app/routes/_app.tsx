@@ -16,7 +16,7 @@ import {
   ShouldRevalidateFunction,
   useFetcher,
 } from "@remix-run/react";
-import dayjs from "dayjs";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
 import { date, object, string } from "zod";
 import { Button } from "~/components/Button";
@@ -36,7 +36,6 @@ import { useLiveLoader } from "~/hooks/useLiveLoader";
 import { ThreadSchema } from "~/models/threads";
 import { getUser } from "~/models/user";
 import { sql } from "~/sql.server";
-import { useVirtualizer } from "@tanstack/react-virtual";
 
 export const meta: V2_MetaFunction = () => {
   return [
@@ -210,7 +209,7 @@ export default function Index() {
                     bg="background"
                     border="bottom"
                   >
-                    {dayjs(day).format("dddd, MMMM D")}
+                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(day))}
                   </ListDivider>
                   {threads.map((thread) => (
                     <ListLink

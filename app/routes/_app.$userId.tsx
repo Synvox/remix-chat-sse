@@ -1,8 +1,6 @@
 import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 import { json, redirect, type DataFunctionArgs } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
-import dayjs from "dayjs";
-import LocalizedFormat from "dayjs/plugin/localizedFormat.js";
 import { object } from "zod";
 import { Button, ButtonLink } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
@@ -16,8 +14,6 @@ import { MessagesSchema } from "~/models/messages";
 import { UserSchema, getUser } from "~/models/user";
 import { realtimeActions } from "~/realtimeActions";
 import { sql } from "~/sql.server";
-
-dayjs.extend(LocalizedFormat);
 
 const ArrowRight = iconOf(mdiArrowRight);
 const ArrowLeft = iconOf(mdiArrowLeft);
@@ -148,7 +144,7 @@ export default function () {
               <div key={message.id}>
                 {separateTime && (
                   <div className="mb-5 text-center text-xs text-light opacity-50">
-                    {dayjs(message.createdAt).format("LLL")}
+                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(message.createdAt))}
                   </div>
                 )}
                 <Message origin={origin}>
