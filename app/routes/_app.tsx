@@ -209,7 +209,7 @@ export default function Index() {
                     bg="background"
                     border="bottom"
                   >
-                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(day))}
+                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(new Date(day))}
                   </ListDivider>
                   {threads.map((thread) => (
                     <ListLink
