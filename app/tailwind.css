@@ -6,7 +6,7 @@
   body {
     --color-primary: 2 104 255;
     --color-primary-alt: 46 183 132;
-    font-size: 15px;
+    font-size: 16px;
     background-color: rgb(var(--color-background));
   }
   .theme-light {
