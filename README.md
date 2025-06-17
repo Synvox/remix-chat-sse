@@ -12,6 +12,11 @@
       <img src="https://github.com/Synvox/remix-chat-sse/blob/main/assets/mobile-2.png?raw=true" alt="Mobile Screenshot">
     </td>
   </tr>
+  <tr>
+    <td colspan="3">
+      <a href="https://github.com/Synvox/remix-chat-sse/blob/main/assets">More screenshots</a>
+    </td>
+  </tr>
 </table>
 
 ## Demo Points
