@@ -1,7 +1,6 @@
 import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 import { json, redirect, type DataFunctionArgs } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
-import { object } from "zod";
 import { Button, ButtonLink } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
 import { Input, InputWrap } from "~/components/Input";
@@ -10,10 +9,10 @@ import { Nav, NavTitle } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
 import { Stack } from "~/components/Stack";
 import { useLiveLoader } from "~/hooks/useLiveLoader";
-import { MessagesSchema } from "~/models/messages";
-import { UserSchema, getUser } from "~/models/user";
+import { getUser } from "~/getters/user";
 import { realtimeActions } from "~/realtimeActions";
 import { sql } from "~/sql.server";
+import { Message as MessageType, User } from "~/types";
 
 const ArrowRight = iconOf(mdiArrowRight);
 const ArrowLeft = iconOf(mdiArrowLeft);
@@ -29,9 +28,9 @@ export async function loader(ctx: DataFunctionArgs) {
   const toUser = await sql`
     select *
     from users
-    where id = ${userId}
+    where id = ${Number(userId)}
     limit 1
-  `.first(UserSchema);
+  `.first<User>();
 
   await sql`
     update threads
@@ -55,15 +54,9 @@ export async function loader(ctx: DataFunctionArgs) {
       where messages.to_user_id in (${toUser.id}, ${user.id})
       and messages.from_user_id in (${toUser.id}, ${user.id})
       order by messages.created_at desc
-    `.paginate({
+    `.paginate<MessageType & { fromUser: User; toUser: User }>({
       page: 0,
       per: 20,
-      schema: MessagesSchema.merge(
-        object({
-          fromUser: UserSchema,
-          toUser: UserSchema,
-        }),
-      ),
     }),
   });
 }
@@ -71,7 +64,7 @@ export async function loader(ctx: DataFunctionArgs) {
 export async function action(ctx: DataFunctionArgs) {
   const user = await getUser(ctx);
   const formData = await ctx.request.formData();
-  const body = formData.get("body");
+  const body = formData.get("body") as string;
   const userId = Number(ctx.params.userId);
 
   if (!body) {
@@ -143,8 +136,11 @@ export default function () {
             return (
               <div key={message.id}>
                 {separateTime && (
-                  <div className="mb-5 text-center text-xs text-light opacity-50">
-                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(message.createdAt))}
+                  <div className="mb-5 mt-5 text-center text-xs text-light opacity-50">
+                    {new Intl.DateTimeFormat("en-US", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }).format(new Date(message.createdAt))}
                   </div>
                 )}
                 <Message origin={origin}>

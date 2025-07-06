@@ -13,9 +13,9 @@ import {
 } from "~/components/List";
 import { Nav } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
-import { UserSchema, getUser } from "~/models/user";
+import { getUser } from "~/getters/user";
 import { sql } from "~/sql.server";
-import { useHotkeys } from "react-hotkeys-hook";
+import { User } from "~/types";
 
 const ArrowLeft = iconOf(mdiArrowLeft);
 
@@ -38,7 +38,7 @@ export async function loader(ctx: DataFunctionArgs) {
     and users.id <> ${user.id}
     order by users.name || ' ' || users.email <-> ${query} asc
     limit 10
-  `.all(UserSchema);
+  `.all<User>();
 
   return json({ users });
 }

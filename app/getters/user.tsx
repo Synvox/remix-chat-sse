@@ -1,12 +1,6 @@
 import { DataFunctionArgs, createCookie, redirect } from "@remix-run/node";
-import { number, object, string } from "zod";
 import { sql } from "~/sql.server";
-
-export const UserSchema = object({
-  id: number(),
-  name: string(),
-  email: string(),
-});
+import { User } from "~/types";
 
 export const sessionCookie = createCookie("session", {});
 
@@ -19,10 +13,10 @@ export async function getUser(ctx: DataFunctionArgs) {
 
   const user = await sql`
     select *
-    from public.users
+    from users
     where id = ${cookie.userId}
     limit 1
-  `.first(UserSchema);
+  `.first<User>();
 
   if (!user) {
     throw redirect("/login", {
@@ -33,4 +27,10 @@ export async function getUser(ctx: DataFunctionArgs) {
   }
 
   return user;
+}
+
+export async function cookieForUserId(userId: number) {
+  const headers = new Headers();
+  headers.set("set-cookie", await sessionCookie.serialize({ userId }));
+  return headers;
 }
