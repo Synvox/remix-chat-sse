@@ -8,28 +8,29 @@ import {
 } from "~/components/List";
 import { Nav, NavTitle } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
-import { UserSchema, sessionCookie } from "~/models/user";
+import { cookieForUserId } from "~/getters/user";
 import { sql } from "~/sql.server";
+import { User } from "~/types";
 
 export async function loader() {
   const users = await sql`
-    select *
-    from users
-  `.all(UserSchema);
+    select
+      *
+    from
+      users
+  `.all<User>();
 
-  return json({
+  return {
     users,
-  });
+  };
 }
 
 export async function action(ctx: DataFunctionArgs) {
   const formData = await ctx.request.formData();
-  const userId = formData.get("userId");
+  const userId = Number(formData.get("userId") as string);
 
   return redirect("/", {
-    headers: {
-      "set-cookie": await sessionCookie.serialize({ userId }),
-    },
+    headers: await cookieForUserId(userId),
   });
 }
 

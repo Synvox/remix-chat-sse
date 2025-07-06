@@ -13,9 +13,9 @@ import {
 } from "~/components/List";
 import { Nav } from "~/components/Nav";
 import { Panel, PanelContent } from "~/components/Panel";
-import { UserSchema, getUser } from "~/models/user";
+import { getUser } from "~/getters/user";
 import { sql } from "~/sql.server";
-import { useHotkeys } from "react-hotkeys-hook";
+import { User } from "~/types";
 
 const ArrowLeft = iconOf(mdiArrowLeft);
 
@@ -25,22 +25,29 @@ export async function loader(ctx: DataFunctionArgs) {
   const query = searchParams.get("q") || "";
 
   if (!query) {
-    return json({
+    return {
       users: [],
-    });
+    };
   }
 
   const users = await sql`
     select
       users.*
-    from users
-    where similarity(users.name || ' ' || users.email, ${query}) > 0.001
-    and users.id <> ${user.id}
-    order by users.name || ' ' || users.email <-> ${query} asc
-    limit 10
-  `.all(UserSchema);
+    from
+      users
+    where
+      similarity (
+        users.name || ' ' || users.email,
+        ${query}
+      ) > 0.001
+      and users.id <> ${user.id}
+    order by
+      users.name || ' ' || users.email <-> ${query} asc
+    limit
+      10
+  `.all<User>();
 
-  return json({ users });
+  return { users };
 }
 
 export default function () {
@@ -80,8 +87,7 @@ export default function () {
               aria-controls={listId}
               aria-autocomplete="list"
               aria-expanded={users.length > 0}
-              data-active-option={`${listId}-item${focusedUserIndex + 1}`}
-              aria-activedescendant=""
+              aria-activedescendant={`${listId}-item${focusedUserIndex + 1}`}
               onKeyDown={(e) => {
                 if (e.key === "ArrowUp") {
                   e.preventDefault();
@@ -102,7 +108,7 @@ export default function () {
         </fetcher.Form>
       </Nav>
       <PanelContent padding="none" scroll="vertical">
-        <List dividers="none">
+        <List dividers="none" id={listId}>
           {users.map((user, index) => (
             <ListLink
               id={`${listId}-item${index + 1}`}
@@ -112,6 +118,7 @@ export default function () {
               activeTheme="primary"
               className={focusedUserIndex === index ? "active" : undefined}
               role="option"
+              aria-selected={focusedUserIndex === index}
             >
               <ListItemTitle>{user.name}</ListItemTitle>
               <ListItemDetails>{user.email}</ListItemDetails>

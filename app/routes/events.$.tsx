@@ -1,6 +1,6 @@
 import type { DataFunctionArgs } from "@remix-run/node";
-import { eventStream } from "remix-utils";
-import { getUser } from "~/models/user";
+import { eventStream } from "remix-utils/sse/server";
+import { getUser } from "~/getters/user";
 
 import { emitter } from "~/realtimeActions";
 

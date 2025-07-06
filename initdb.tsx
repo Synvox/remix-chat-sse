@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
-import { UserSchema } from "~/models/user";
 import { sql } from "~/sql.server";
+import { User } from "~/types";
 
 async function main() {
   await sql.transaction(async (sql) => {
@@ -42,17 +42,19 @@ async function main() {
 
     const users = await sql`
       insert into users
-      ${Array.from({ length: 1000 }).map(() => {
-        const firstName = faker.person.firstName();
-        const lastName = faker.person.lastName();
-        const email = faker.internet.email({ firstName, lastName });
-        return {
-          name: `${firstName} ${lastName}`,
-          email,
-        };
-      })}
+      ${sql.values(
+        Array.from({ length: 1000 }).map(() => {
+          const firstName = faker.person.firstName();
+          const lastName = faker.person.lastName();
+          const email = faker.internet.email({ firstName, lastName });
+          return {
+            name: `${firstName} ${lastName}`,
+            email,
+          };
+        }),
+      )}
       returning *
-    `.all(UserSchema);
+    `.all<User>();
 
     for (let i = 0; i < 250000; i++) {
       const body = faker.lorem.sentence();

@@ -18,7 +18,6 @@ import {
 } from "@remix-run/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useRef, useState } from "react";
-import { date, object, string } from "zod";
 import { Button } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
 import { Input, InputWrap } from "~/components/Input";
@@ -32,10 +31,10 @@ import {
 } from "~/components/List";
 import { Nav, NavHGroup, NavSubTitle, NavTitle } from "~/components/Nav";
 import { Panel, PanelContent, Panels } from "~/components/Panel";
+import { getUser } from "~/getters/user";
 import { useLiveLoader } from "~/hooks/useLiveLoader";
-import { ThreadSchema } from "~/models/threads";
-import { getUser } from "~/models/user";
 import { sql } from "~/sql.server";
+import { Thread } from "~/types";
 
 export const meta: V2_MetaFunction = () => {
   return [
@@ -55,29 +54,31 @@ export async function loader(ctx: DataFunctionArgs) {
       date_trunc('day', messages.created_at) as last_message_day,
       messages.body as last_message_body,
       to_user.name as to_user_name
-    from threads
-    join messages on messages.id = threads.last_message_id
-    join users to_user on to_user.id = threads.to_user_id
-    where threads.from_user_id = ${user.id}
-    order by messages.created_at desc
-  `.paginate({
+    from
+      threads
+      join messages on messages.id = threads.last_message_id
+      join users to_user on to_user.id = threads.to_user_id
+    where
+      threads.from_user_id = ${user.id}
+    order by
+      messages.created_at desc
+  `.paginate<
+    Thread & {
+      lastMessageDay: string;
+      lastMessageBody: string;
+      toUserName: string;
+    }
+  >({
     page: 0,
     per,
-    schema: ThreadSchema.merge(
-      object({
-        lastMessageDay: date(),
-        lastMessageBody: string(),
-        toUserName: string(),
-      }),
-    ),
   });
 
-  return json({
+  return {
     per,
     user,
     threads,
     hasMore: threads.length === per,
-  });
+  };
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = ({
@@ -209,7 +210,9 @@ export default function Index() {
                     bg="background"
                     border="bottom"
                   >
-                    {new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(new Date(day))}
+                    {new Intl.DateTimeFormat("en-US", {
+                      dateStyle: "long",
+                    }).format(new Date(day))}
                   </ListDivider>
                   {threads.map((thread) => (
                     <ListLink
