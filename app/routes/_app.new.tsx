@@ -25,22 +25,29 @@ export async function loader(ctx: DataFunctionArgs) {
   const query = searchParams.get("q") || "";
 
   if (!query) {
-    return json({
+    return {
       users: [],
-    });
+    };
   }
 
   const users = await sql`
     select
       users.*
-    from users
-    where similarity(users.name || ' ' || users.email, ${query}) > 0.001
-    and users.id <> ${user.id}
-    order by users.name || ' ' || users.email <-> ${query} asc
-    limit 10
+    from
+      users
+    where
+      similarity (
+        users.name || ' ' || users.email,
+        ${query}
+      ) > 0.001
+      and users.id <> ${user.id}
+    order by
+      users.name || ' ' || users.email <-> ${query} asc
+    limit
+      10
   `.all<User>();
 
-  return json({ users });
+  return { users };
 }
 
 export default function () {

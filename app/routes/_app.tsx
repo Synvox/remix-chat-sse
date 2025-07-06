@@ -54,11 +54,14 @@ export async function loader(ctx: DataFunctionArgs) {
       date_trunc('day', messages.created_at) as last_message_day,
       messages.body as last_message_body,
       to_user.name as to_user_name
-    from threads
-    join messages on messages.id = threads.last_message_id
-    join users to_user on to_user.id = threads.to_user_id
-    where threads.from_user_id = ${user.id}
-    order by messages.created_at desc
+    from
+      threads
+      join messages on messages.id = threads.last_message_id
+      join users to_user on to_user.id = threads.to_user_id
+    where
+      threads.from_user_id = ${user.id}
+    order by
+      messages.created_at desc
   `.paginate<
     Thread & {
       lastMessageDay: string;
@@ -70,12 +73,12 @@ export async function loader(ctx: DataFunctionArgs) {
     per,
   });
 
-  return json({
+  return {
     per,
     user,
     threads,
     hasMore: threads.length === per,
-  });
+  };
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = ({

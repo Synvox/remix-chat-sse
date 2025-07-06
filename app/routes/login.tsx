@@ -14,13 +14,15 @@ import { User } from "~/types";
 
 export async function loader() {
   const users = await sql`
-    select *
-    from users
+    select
+      *
+    from
+      users
   `.all<User>();
 
-  return json({
+  return {
     users,
-  });
+  };
 }
 
 export async function action(ctx: DataFunctionArgs) {

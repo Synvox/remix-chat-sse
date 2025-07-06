@@ -2,9 +2,7 @@ import { faker } from "@faker-js/faker";
 import { Sql } from "@synvox/sql";
 
 export async function up(sql: Sql) {
-  await sql`drop table if exists threads`.exec();
-  await sql`drop table if exists messages`.exec();
-  await sql`drop table if exists users`.exec();
+  await sql`create extension if not exists pg_trgm`.exec();
 
   await sql`
     create table users (
@@ -41,7 +39,7 @@ export async function up(sql: Sql) {
   const users = await sql`
     insert into
       users ${sql.values(
-      Array.from({ length: 1000 }).map(() => {
+      Array.from({ length: 10 }).map(() => {
         const firstName = faker.person.firstName();
         const lastName = faker.person.lastName();
         const email = faker.internet.email({ firstName, lastName });
