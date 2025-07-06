@@ -87,8 +87,7 @@ export default function () {
               aria-controls={listId}
               aria-autocomplete="list"
               aria-expanded={users.length > 0}
-              data-active-option={`${listId}-item${focusedUserIndex + 1}`}
-              aria-activedescendant=""
+              aria-activedescendant={`${listId}-item${focusedUserIndex + 1}`}
               onKeyDown={(e) => {
                 if (e.key === "ArrowUp") {
                   e.preventDefault();
@@ -109,7 +108,7 @@ export default function () {
         </fetcher.Form>
       </Nav>
       <PanelContent padding="none" scroll="vertical">
-        <List dividers="none">
+        <List dividers="none" id={listId}>
           {users.map((user, index) => (
             <ListLink
               id={`${listId}-item${index + 1}`}
@@ -119,6 +118,7 @@ export default function () {
               activeTheme="primary"
               className={focusedUserIndex === index ? "active" : undefined}
               role="option"
+              aria-selected={focusedUserIndex === index}
             >
               <ListItemTitle>{user.name}</ListItemTitle>
               <ListItemDetails>{user.email}</ListItemDetails>
