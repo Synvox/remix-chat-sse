@@ -1,6 +1,7 @@
 import { mdiArrowLeft, mdiArrowRight } from "@mdi/js";
 import { data, redirect, type DataFunctionArgs } from "@remix-run/node";
 import { useFetcher } from "@remix-run/react";
+import { useEffect, useRef } from "react";
 import { Button, ButtonLink } from "~/components/Button";
 import { iconOf } from "~/components/Icon";
 import { Input, InputWrap } from "~/components/Input";
@@ -69,7 +70,7 @@ export async function loader(ctx: DataFunctionArgs) {
         messages.created_at desc
     `.paginate<MessageType & { fromUser: User; toUser: User }>({
       page: 0,
-      per: 20,
+      per: 200, // Lazy load in the future
     }),
   };
 }
@@ -159,6 +160,13 @@ export async function action(ctx: DataFunctionArgs) {
 export default function () {
   const { toUser, messages } = useLiveLoader<typeof loader>();
   const fetcher = useFetcher();
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView(true);
+    }
+  }, [messages]);
 
   return (
     <Panel bg="foreground" id={`panel-user-${toUser.id}`}>
@@ -170,12 +178,24 @@ export default function () {
           bg="foregroundLighter"
           shape="circle"
           to="#panel-nav"
+          aria-label="Back"
         >
           <ArrowLeft />
         </ButtonLink>
         <NavTitle>{toUser.name}</NavTitle>
       </Nav>
-      <PanelContent padding="medium" scroll="vertical">
+      <PanelContent
+        padding="medium"
+        scroll="vertical"
+        role="log"
+        aria-label="Messages"
+        aria-description="Use arrow keys to navigate, enter to write new message"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            (document.querySelector("#composer") as HTMLInputElement)?.focus();
+          }
+        }}
+      >
         <div className="flex flex-1 flex-col-reverse justify-start gap-0.5">
           {messages.map((message, index) => {
             const prevMessage = messages[index - 1];
@@ -189,16 +209,28 @@ export default function () {
                 new Date(nextMessage?.createdAt).getTime() >
                 1000 * 60 * 5;
             return (
-              <div key={message.id}>
+              <div key={message.id} tabIndex={1} role="listitem">
                 {separateTime && (
-                  <div className="mb-5 mt-5 text-center text-xs text-light opacity-50">
+                  <time className="block mb-5 mt-5 text-center text-xs text-light opacity-50">
                     {new Intl.DateTimeFormat("en-US", {
                       dateStyle: "medium",
                       timeStyle: "short",
                     }).format(new Date(message.createdAt))}
+                  </time>
+                )}
+                {index === 0 && message.fromUser.id === toUser.id && (
+                  <div
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className="sr-only"
+                  >
+                    New message from {message.fromUser.name}
                   </div>
                 )}
-                <Message origin={origin}>
+                <Message
+                  origin={origin}
+                  ref={index === 0 ? lastMessageRef : null}
+                >
                   <MessageBubble origin={origin}>{message.body}</MessageBubble>
                   {prevOrigin !== origin && (
                     <MessageAuthor>{message.fromUser.name}</MessageAuthor>
@@ -216,7 +248,9 @@ export default function () {
           method="POST"
           onSubmit={(e) => {
             requestAnimationFrame(() => {
-              (e.target as HTMLFormElement).reset();
+              const form = e.target as HTMLFormElement;
+              form.reset();
+              form.body.focus();
             });
           }}
         >
@@ -241,6 +275,7 @@ export default function () {
                 variant="secondary"
                 bg="primary"
                 shape="circle"
+                aria-label="Send"
               >
                 <ArrowRight />
               </Button>

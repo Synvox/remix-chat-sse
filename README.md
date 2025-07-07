@@ -1,4 +1,4 @@
-# September 2023 Remix Meetup
+# Remix SSE chat demo
 
 <table>
   <tr>

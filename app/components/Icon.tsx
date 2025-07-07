@@ -18,6 +18,7 @@ export function iconOf(path: string, width = 24, height = width, padding = 0) {
           width={width}
           height={height}
           className={["icon", className].filter(Boolean).join(" ")}
+          role="presentation"
           {...props}
         >
           <g style={{ transform }}>

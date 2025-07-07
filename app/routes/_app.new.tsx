@@ -55,7 +55,7 @@ export default function () {
   let { users } = useLoaderData<typeof loader>();
   const [focusedUserIndex, setFocusedUserIndex] = useState(0);
 
-  let fetcher = useFetcher();
+  let fetcher = useFetcher<typeof loader>();
   if (fetcher.data?.users) users = fetcher.data.users;
   const navigate = useNavigate();
 
@@ -69,15 +69,17 @@ export default function () {
           bg="foregroundLighter"
           shape="circle"
           to="#panel-nav"
+          aria-label="Back"
         >
           <ArrowLeft />
         </ButtonLink>
         <fetcher.Form className="flex flex-1" method="GET" action=".">
           <InputWrap elevation="small" bg="foregroundLighter">
-            To:
+            <label htmlFor={`${listId}-input`}>To:</label>
             <Input
               placeholder="Search"
               autoFocus
+              id={`${listId}-input`}
               name="q"
               onChange={(e) => {
                 fetcher.submit(e.target.form);
@@ -108,7 +110,13 @@ export default function () {
         </fetcher.Form>
       </Nav>
       <PanelContent padding="none" scroll="vertical">
-        <List dividers="none" id={listId}>
+        <List
+          dividers="none"
+          id={listId}
+          role="listbox"
+          aria-label="Search results"
+          aria-description="Use arrow keys to navigate, enter to select"
+        >
           {users.map((user, index) => (
             <ListLink
               id={`${listId}-item${index + 1}`}

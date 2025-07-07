@@ -5,11 +5,7 @@ import {
   mdiWeatherNight,
   mdiWeatherSunny,
 } from "@mdi/js";
-import {
-  json,
-  type DataFunctionArgs,
-  type V2_MetaFunction,
-} from "@remix-run/node";
+import { type DataFunctionArgs } from "@remix-run/node";
 import {
   Form,
   Outlet,
@@ -35,13 +31,6 @@ import { getUser } from "~/getters/user";
 import { useLiveLoader } from "~/hooks/useLiveLoader";
 import { sql } from "~/sql.server";
 import { Thread } from "~/types";
-
-export const meta: V2_MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
-};
 
 export async function loader(ctx: DataFunctionArgs) {
   const user = await getUser(ctx);
@@ -175,6 +164,7 @@ export default function Index() {
               variant="secondary"
               bg="foreground"
               shape="circle"
+              aria-label="New message"
             >
               <NewIcon />
             </Button>
@@ -183,11 +173,13 @@ export default function Index() {
         <Nav justify="between">
           <InputWrap elevation="small" bg="foreground">
             <SearchIcon />
-            <Input placeholder="Search" />
+            <Input placeholder="Search" aria-label="Search" />
           </InputWrap>
         </Nav>
         <PanelContent padding="none" scroll="vertical" ref={parentRef}>
           <List
+            role="list"
+            aria-label="Threads"
             dividers="none"
             style={{
               height: `${rowVirtualizer.getTotalSize()}px`,
@@ -204,30 +196,37 @@ export default function Index() {
               const { day, threads } = threadsGroupedByDay[virtualItem.index];
 
               return (
-                <ListGroup key={day}>
+                <ListGroup key={day} role="group">
                   <ListDivider
                     position="sticky"
                     bg="background"
                     border="bottom"
                   >
-                    {new Intl.DateTimeFormat("en-US", {
-                      dateStyle: "long",
-                    }).format(new Date(day))}
+                    <time>
+                      {new Intl.DateTimeFormat("en-US", {
+                        dateStyle: "long",
+                      }).format(new Date(day))}
+                    </time>
                   </ListDivider>
                   {threads.map((thread) => (
                     <ListLink
                       key={thread.toUserId}
+                      role="listitem"
                       to={`${thread.toUserId}#panel-user-${thread.toUserId}`}
                       activeTheme="primary"
                       shape="rounded"
                       className="pr-8"
+                      aria-describedby={`thread-${thread.toUserId}`}
                     >
                       <ListItemTitle>{thread.toUserName}</ListItemTitle>
-                      <ListItemDetails>
+                      <ListItemDetails id={`thread-${thread.toUserId}`}>
                         {thread.lastMessageBody}
                       </ListItemDetails>
                       {thread.isUnread && (
-                        <div className="absolute bottom-0 right-6 top-0 flex h-full items-center [.active>&]:hidden">
+                        <div
+                          className="absolute bottom-0 right-6 top-0 flex h-full items-center [.active>&]:hidden"
+                          aria-label="Unread"
+                        >
                           <Circle className="absolute top-1/2 h-3 w-3 -translate-y-1/2 fill-primary" />
                         </div>
                       )}
@@ -237,12 +236,18 @@ export default function Index() {
               );
             })}
           </List>
+          {fetcher.state === "loading" && (
+            <div role="status" aria-live="polite" className="sr-only">
+              Loading more messages...
+            </div>
+          )}
         </PanelContent>
         <Nav partialBorder="top" justify="between">
           <Button
             variant="tertiary"
             shape="circle"
             bg="background"
+            aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
             onClick={
               theme === "dark"
                 ? () => setTheme("light")
