@@ -17,6 +17,7 @@
     "@remix-run/serve": "2.16.8",
     "@synvox/sql": "5.0.0-0",
     "@tanstack/react-virtual": "3.0.0-beta.60",
+    "autoprefixer": "^10.4.21",
     "dotenv": "17.0.1",
     "isbot": "^3.6.8",
     "pg": "8.11.3",
